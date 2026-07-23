@@ -49,6 +49,9 @@ class TerminalInputView(context: Context) : EditText(context) {
     /** Cached InputMethodManager for IME restarts. */
     private var inputMethodManager: InputMethodManager? = null
 
+    /** Tracks window focus so a background -> foreground return can be detected. */
+    private var hadWindowFocus = false
+
     private fun logInput(message: String) {
         if (!DEBUG_INPUT_LOGS) return
         Log.d(LOG_TAG, message)
@@ -200,6 +203,27 @@ class TerminalInputView(context: Context) : EditText(context) {
             logInput("showKeyboard.restartInput")
             imm.restartInput(this)
             imm.showSoftInput(this, InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        // Returning from the background keeps this view focused, so the focus
+        // listener never re-shows the keyboard and the IME stays bound to a
+        // stale connection (typing lags). Rebind on the regain edge instead.
+        val rebind = shouldRebindImeOnWindowFocus(
+            previouslyHadWindowFocus = hadWindowFocus,
+            hasWindowFocus = hasWindowFocus,
+            viewHasFocus = hasFocus(),
+        )
+        hadWindowFocus = hasWindowFocus
+        if (rebind) {
+            logInput("onWindowFocusChanged restartInput")
+            val imm = inputMethodManager
+                ?: context.getSystemService(InputMethodManager::class.java)?.also {
+                    inputMethodManager = it
+                }
+            imm?.restartInput(this)
         }
     }
 
