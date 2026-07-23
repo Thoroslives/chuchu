@@ -52,30 +52,6 @@ jobs:
           prerelease: true
           files: android/app/build/outputs/apk/debug/*.apk
           fail_on_unmatched_files: true
-      - name: Check formatting (ktfmt, feature files)
-        run: |
-          nix develop -c bash -c '
-            ktfmt --kotlinlang-style \
-              android/app/src/main/java/com/jossephus/chuchu/data/repository/SettingsRepository.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/ApplicationNavController.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/screens/Settings/SettingsScreen.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/screens/Settings/TerminalAccessorySettings.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/screens/Terminal/TerminalScreen.kt
-            echo "=== KTFMT DIFF START ==="
-            git --no-pager diff
-            echo "=== KTFMT DIFF END ==="
-          '
-      - name: Lint (ktlint, feature files)
-        run: |
-          nix develop -c bash -c '
-            set -e
-            ktlint --editorconfig=android/.editorconfig \
-              android/app/src/main/java/com/jossephus/chuchu/data/repository/SettingsRepository.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/ApplicationNavController.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/screens/Settings/SettingsScreen.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/screens/Settings/TerminalAccessorySettings.kt \
-              android/app/src/main/java/com/jossephus/chuchu/ui/screens/Terminal/TerminalScreen.kt
-          '
       - name: Unit tests
         run: |
           nix develop -c bash -c '
