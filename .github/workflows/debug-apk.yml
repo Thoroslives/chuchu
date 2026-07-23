@@ -1,0 +1,60 @@
+name: Debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - test-66-fix
+
+permissions:
+  contents: write
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Warm nix shell
+        run: nix develop -L --verbose -c true
+
+      - name: Build chuchu_jni (Zig native lib)
+        run: |
+          nix develop -c bash -c '
+            set -e
+            cd zig-src
+            zig build -Doptimize=ReleaseSmall jni
+          '
+
+      - name: Build debug APK
+        run: |
+          nix develop -c bash -c '
+            set -e
+            cd android
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          '
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chuchu-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Publish prerelease for Obtainium
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: debug-pr73
+          name: "Debug build: PR #73 mosh-freeze fix"
+          body: |
+            Unofficial debug build of Chuchu with salemsayed's PR #73 fix
+            (handle large Mosh output events). Debug-signed, for testing the
+            keyboard-hide / resize freeze from issue #66. Not for general use.
+          prerelease: true
+          files: android/app/build/outputs/apk/debug/*.apk
+          fail_on_unmatched_files: true
